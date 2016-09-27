@@ -1,4 +1,5 @@
 import fp from "lodash/fp";
+import {combineReducers} from "redux";
 import _ from "lodash";
 
 export class StateDatabase {
@@ -15,6 +16,7 @@ export class StateDatabase {
         }, items);
         this.INITIAL_STATE = fp.fromPairs(fp.map(x => [x.name, x.INITIAL_STATE], this._items));
         _.assignIn(this, fp.keyBy('name', this._items));
+        this.reducer = combineReducers(fp.fromPairs(fp.map(x => [x.name, x.reducer], this._items)));
     }
 }
 
@@ -25,6 +27,15 @@ export class StateDocument {
         this.TYPE_UPDATE = `${prefix}${this.name}.update`;
         this.TYPE_SET = `${prefix}${this.name}.set`;
         this.INITIAL_STATE = initialState;
+        this.reducer = (state = this.INITIAL_STATE, action = {}) => {
+            switch (action.type) {
+                case this.TYPE_UPDATE:
+                    return {...state, ...action.payload};
+                case this.TYPE_SET:
+                    return action.payload;
+            }
+            return state;
+        }
     }
 
     update(payload) {
@@ -35,15 +46,7 @@ export class StateDocument {
         return {type: this.TYPE_SET, payload};
     }
 
-    dux(state, action) {
-        switch (action.type) {
-            case this.TYPE_UPDATE:
-                return {...state, ...action.payload};
-            case this.TYPE_SET:
-                return action.payload;
-        }
-        return state;
-    }
+
 }
 
 export class StateTable {
@@ -55,6 +58,14 @@ export class StateTable {
         this.TYPE_SET = `${prefix}${this.name}.set`;
         this.TYPE_REMOVE = `${prefix}${this.name}.remove`;
         this.INITIAL_STATE = {keys: [], collection: {}, entries: []};
+        this.reducer = (state, action)=> {
+            const newState = this._dux(state, action);
+            if (newState === state) {
+                return state;
+            }
+            const entries = fp.sortBy(entry => newState.keys.indexOf(entry._key), fp.values(newState.collection));
+            return {...newState, entries};
+        }
     }
 
     insert(_key, entry) {
@@ -73,7 +84,7 @@ export class StateTable {
         return {type: this.TYPE_SET, payload: {_key, entry}};
     }
 
-    _dux(state, action) {
+    _dux(state = this.INITIAL_STATE, action = {}) {
         switch (action.type) {
             case this.TYPE_INSERT: {
                 const {_key, entry} = action.payload;
@@ -109,14 +120,5 @@ export class StateTable {
             }
         }
         return state;
-    }
-
-    dux(state, action) {
-        const newState = this._dux(state, action);
-        if (newState === state) {
-            return state;
-        }
-        const entries = fp.sortBy(entry => newState.keys.indexOf(entry._key), fp.values(newState.collection));
-        return {...newState, entries};
     }
 }

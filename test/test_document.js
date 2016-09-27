@@ -11,7 +11,7 @@ suite("Document", function () {
 
         const action = document.update({version: 1});
         deepEqual(action, {type: 'document.update', payload: {version: 1}});
-        state = document.dux(state, action);
+        state = document.reducer(state, action);
         deepEqual(state, {version: 1, revision: 0});
     });
 
@@ -21,7 +21,7 @@ suite("Document", function () {
         const action = document.set({version: '1.0'});
         deepEqual(action, {type: 'document.set', payload: {version: '1.0'}});
 
-        state = document.dux(state, action);
+        state = document.reducer(state, action);
         deepEqual(state, {version: '1.0'});
     });
 });

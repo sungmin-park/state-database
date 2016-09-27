@@ -15,9 +15,10 @@ suite('Database', function () {
         const db = new StateDatabase('root', new StateDocument('info'));
         deepEqual(db.INITIAL_STATE, {info: {}});
 
-        deepEqual(
-            db.info.update('payload'), {type: 'root.info.update', payload: 'payload'}
-        );
+        const action = db.info.update({version: 1});
+        deepEqual(action, {type: 'root.info.update', payload: {version: 1}});
+        const state = db.reducer(db.INITIAL_STATE, action);
+        deepEqual(state, {info: {version: 1}});
     });
 
     test('items', function () {
