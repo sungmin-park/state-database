@@ -1,16 +1,16 @@
 import {suite, test, setup} from "mocha";
 import {assert} from "chai";
-import {createTable} from "../src/statedb";
+import {StateTable} from "../src/statedb";
 
 const {deepEqual, throws} = assert;
 
 suite("Table", function () {
     test("insert", function () {
-        let {table, state} = createTable('user');
+        const table = new StateTable('user');
         const action = table.insert('0', {name: 'john'});
         deepEqual(action, {type: 'user.insert', payload: {_key: '0', entry: {name: 'john'}}});
 
-        state = table.dux(state, action);
+        let state = table.dux(table.INITIAL_STATE, action);
         deepEqual(state, {
                 keys: ['0'],
                 collection: {'0': {_key: '0', name: 'john'}},
@@ -22,7 +22,8 @@ suite("Table", function () {
     });
 
     test('entries', function () {
-        let {table, state} = createTable('user');
+        const table = new StateTable('user');
+        let state = table.INITIAL_STATE;
         state = table.dux(state, table.insert('0', {name: 'john'}));
         state = table.dux(state, table.insert('2', {name: 'jack'}));
         state = table.dux(state, table.insert('1', {name: 'jill'}));
@@ -35,7 +36,8 @@ suite("Table", function () {
     });
 
     test("update", function () {
-        let {table, state} = createTable('user');
+        const table = new StateTable('user');
+        let state = table.INITIAL_STATE;
         state = table.dux(state, table.insert('0', {name: 'jack', age: 10}));
 
         const action = table.update('0', {name: 'jack'});
@@ -53,7 +55,8 @@ suite("Table", function () {
     });
 
     test("set", function () {
-        let {table, state} = createTable('user');
+        const table = new StateTable('user');
+        let state = table.INITIAL_STATE;
         state = table.dux(state, table.insert('0', {name: 'jack', age: 10}));
 
         const action = table.set('0', {name: 'jack'});
@@ -70,7 +73,8 @@ suite("Table", function () {
     });
 
     test("remove", function () {
-        let {table, state} = createTable('user');
+        const table = new StateTable('user');
+        let state = table.INITIAL_STATE;
         state = table.dux(state, table.insert('0', {name: 'john', age: 10}));
         state = table.dux(state, table.insert('1', {name: 'jack', age: 20}));
         state = table.dux(state, table.insert('2', {name: 'jill', age: 30}));

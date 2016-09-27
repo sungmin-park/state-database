@@ -1,18 +1,30 @@
 import fp from "lodash/fp";
+import _ from "lodash";
 
-export function createDocument(name, state) {
-    return {db: new Document(name), state};
+export class StateDatabase {
+    constructor(name, ...items) {
+        this._name = name;
+        this._items = fp.map(item => {
+            if (item instanceof StateDocument) {
+                return new StateDocument(item.name, item.INITIAL_STATE, this);
+            }
+            if (item instanceof StateTable) {
+                return new StateTable(item.name, this);
+            }
+            throw new Error(`Cannot handle type of ${item}`);
+        }, items);
+        this.INITIAL_STATE = fp.fromPairs(fp.map(x => [x.name, x.INITIAL_STATE], this._items));
+        _.assignIn(this, fp.keyBy('name', this._items));
+    }
 }
 
-export function createTable(name) {
-    return {table: new Table(name), state: {keys: [], collection: {}, entries: []}};
-}
-
-class Document {
-    constructor(name) {
+export class StateDocument {
+    constructor(name, initialState = {}, database = null) {
         this.name = name;
-        this.TYPE_UPDATE = `${this.name}.update`;
-        this.TYPE_SET = `${this.name}.set`;
+        const prefix = database ? `${database._name}.` : '';
+        this.TYPE_UPDATE = `${prefix}${this.name}.update`;
+        this.TYPE_SET = `${prefix}${this.name}.set`;
+        this.INITIAL_STATE = initialState;
     }
 
     update(payload) {
@@ -34,13 +46,15 @@ class Document {
     }
 }
 
-class Table {
-    constructor(name) {
+export class StateTable {
+    constructor(name, database = null) {
         this.name = name;
-        this.TYPE_INSERT = `${this.name}.insert`;
-        this.TYPE_UPDATE = `${this.name}.update`;
-        this.TYPE_SET = `${this.name}.set`;
-        this.TYPE_REMOVE = `${this.name}.remove`;
+        const prefix = database ? `${database._name}.` : '';
+        this.TYPE_INSERT = `${prefix}${this.name}.insert`;
+        this.TYPE_UPDATE = `${prefix}${this.name}.update`;
+        this.TYPE_SET = `${prefix}${this.name}.set`;
+        this.TYPE_REMOVE = `${prefix}${this.name}.remove`;
+        this.INITIAL_STATE = {keys: [], collection: {}, entries: []};
     }
 
     insert(_key, entry) {
