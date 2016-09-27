@@ -1,6 +1,6 @@
 import {suite, test, setup} from "mocha";
 import {assert} from "chai";
-import {createTable, DuplicatedKey} from "../src/statedb";
+import {createTable} from "../src/statedb";
 
 const {deepEqual, throws} = assert;
 
